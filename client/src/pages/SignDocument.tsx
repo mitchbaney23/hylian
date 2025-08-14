@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { Document, Page, pdfjs } from 'react-pdf'
@@ -27,6 +27,7 @@ const SignDocument = () => {
   const [signatureData, setSignatureData] = useState<string>('')
   const [signaturePosition, setSignaturePosition] = useState<SignaturePosition | null>(null)
   const [isPlacingSignature, setIsPlacingSignature] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
 
   const { data: contract, isLoading } = useQuery(
     ['contract', contractId],
@@ -45,6 +46,33 @@ const SignDocument = () => {
     () => api.get(`/signature-fields/document/${contract?.document.id}`).then(res => res.data),
     { enabled: !!contract?.document.id }
   )
+
+  // Fetch PDF with authentication
+  useEffect(() => {
+    const fetchPdf = async () => {
+      if (!contract?.document.id) return
+
+      try {
+        const response = await api.get(`/documents/${contract.document.id}/file`, {
+          responseType: 'blob'
+        })
+        const blob = new Blob([response.data], { type: 'application/pdf' })
+        const url = URL.createObjectURL(blob)
+        setPdfUrl(url)
+      } catch (error) {
+        console.error('Error fetching PDF:', error)
+      }
+    }
+
+    fetchPdf()
+
+    // Cleanup object URL when component unmounts
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [contract?.document.id])
 
   const signMutation = useMutation(
     (signatureData: any) => api.post('/signatures', signatureData),
@@ -222,11 +250,12 @@ const SignDocument = () => {
               </div>
               
               <div className="relative" onClick={handlePageClick}>
-                <Document
-                  file={`/api/documents/${contract.document.id}/file`}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                  className="flex justify-center"
-                >
+                {pdfUrl && (
+                  <Document
+                    file={pdfUrl}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                    className="flex justify-center"
+                  >
                   <div className="relative">
                     <Page pageNumber={currentPage} width={800} />
                     
@@ -328,7 +357,8 @@ const SignDocument = () => {
                       </div>
                     )}
                   </div>
-                </Document>
+                  </Document>
+                )}
               </div>
             </div>
           </div>

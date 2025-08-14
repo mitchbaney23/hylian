@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { useMutation, useQueryClient, useQuery } from 'react-query'
 import { api } from '../utils/api'
@@ -50,8 +50,34 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
   const [selectedFieldType, setSelectedFieldType] = useState<string>('signature')
   const [selectedSigner, setSelectedSigner] = useState<Signer | null>(signers[0] || null)
   const [isPlacingField, setIsPlacingField] = useState(false)
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const pdfContainerRef = useRef<HTMLDivElement>(null)
+
+  // Fetch PDF with authentication
+  useEffect(() => {
+    const fetchPdf = async () => {
+      try {
+        const response = await api.get(`/documents/${documentId}/file`, {
+          responseType: 'blob'
+        })
+        const blob = new Blob([response.data], { type: 'application/pdf' })
+        const url = URL.createObjectURL(blob)
+        setPdfUrl(url)
+      } catch (error) {
+        console.error('Error fetching PDF:', error)
+      }
+    }
+
+    fetchPdf()
+
+    // Cleanup object URL when component unmounts
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [documentId])
 
   // Get existing signature fields
   const { data: signatureFields = [] } = useQuery(
@@ -267,12 +293,14 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
                 className="relative cursor-crosshair"
                 onClick={handlePageClick}
               >
-                <Document
-                  file={`/api/documents/${documentId}/file`}
-                  onLoadSuccess={onDocumentLoadSuccess}
-                >
-                  <Page pageNumber={currentPage} width={800} />
-                </Document>
+                {pdfUrl && (
+                  <Document
+                    file={pdfUrl}
+                    onLoadSuccess={onDocumentLoadSuccess}
+                  >
+                    <Page pageNumber={currentPage} width={800} />
+                  </Document>
+                )}
 
                 {/* Render signature fields */}
                 {currentPageFields.map((field: SignatureField) => (
