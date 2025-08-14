@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdDocuments Document[]
+  signatures       Signature[]
+  contractSigners  ContractSigner[]
+
+  @@map("users")
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  filename    String
+  originalName String
+  fileSize    Int
+  mimeType    String
+  status      String   @default("draft")
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User       @relation(fields: [createdById], references: [id])
+  contracts Contract[]
+
+  @@map("documents")
+}
+
+model Contract {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  documentId  String
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  completedAt DateTime?
+
+  document Document         @relation(fields: [documentId], references: [id])
+  signers  ContractSigner[]
+
+  @@map("contracts")
+}
+
+model ContractSigner {
+  id         String   @id @default(uuid())
+  contractId String
+  userId     String?
+  email      String
+  name       String
+  status     String   @default("pending")
+  invitedAt  DateTime @default(now())
+  signedAt   DateTime?
+
+  contract   Contract    @relation(fields: [contractId], references: [id])
+  user       User?       @relation(fields: [userId], references: [id])
+  signatures Signature[]
+
+  @@unique([contractId, email])
+  @@map("contract_signers")
+}
+
+model Signature {
+  id        String   @id @default(uuid())
+  signerId  String
+  userId    String?
+  signatureData String
+  signatureType String @default("electronic")
+  positionX Float
+  positionY Float
+  width     Float
+  height    Float
+  pageNumber Int
+  createdAt DateTime @default(now())
+
+  signer ContractSigner @relation(fields: [signerId], references: [id])
+  user   User?          @relation(fields: [userId], references: [id])
+
+  @@map("signatures")
+}
