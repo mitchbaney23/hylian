@@ -1,9 +1,10 @@
-// Remove unused import
 import { Link } from 'react-router-dom'
-import { useQuery } from 'react-query'
+import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { api } from '../utils/api'
 
 const Dashboard = () => {
+  const queryClient = useQueryClient()
+
   const { data: documents, isLoading: documentsLoading } = useQuery(
     'documents',
     () => api.get('/documents').then(res => res.data)
@@ -13,6 +14,24 @@ const Dashboard = () => {
     'contracts',
     () => api.get('/contracts').then(res => res.data)
   )
+
+  const deleteDocumentMutation = useMutation(
+    (documentId: string) => api.delete(`/documents/${documentId}`),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('documents')
+      },
+      onError: (error: any) => {
+        alert(error.response?.data?.error || 'Failed to delete document')
+      }
+    }
+  )
+
+  const handleDeleteDocument = async (documentId: string, documentName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${documentName}"? This action cannot be undone.`)) {
+      deleteDocumentMutation.mutate(documentId)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -69,13 +88,27 @@ const Dashboard = () => {
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
                         {doc.status}
                       </span>
-                      {doc.contracts.length === 0 && (
-                        <Link
-                          to={`/documents/${doc.id}/template`}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Prepare for Signing
-                        </Link>
+                      {doc.contracts.length === 0 ? (
+                        <>
+                          <Link
+                            to={`/documents/${doc.id}/template`}
+                            className="text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            Prepare for Signing
+                          </Link>
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id, doc.originalName)}
+                            disabled={deleteDocumentMutation.isLoading}
+                            className="text-red-600 hover:text-red-800 text-sm disabled:opacity-50"
+                            title="Delete document"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-gray-500">
+                          {doc.contracts.length} contract(s)
+                        </span>
                       )}
                     </div>
                   </div>

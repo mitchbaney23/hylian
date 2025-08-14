@@ -33,6 +33,7 @@ model Document {
   createdById String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  fileContent Bytes?   // Store file content as backup for persistence
 
   createdBy        User             @relation(fields: [createdById], references: [id])
   contracts        Contract[]
