@@ -54,6 +54,7 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(true)
   const [pdfError, setPdfError] = useState<string | null>(null)
+  const [selectedField, setSelectedField] = useState<SignatureField | null>(null)
   const queryClient = useQueryClient()
   const pdfContainerRef = useRef<HTMLDivElement>(null)
 
@@ -141,7 +142,13 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
   }
 
   const handlePageClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!isPlacingField || !selectedSigner || !pdfContainerRef.current) return
+    // Clear selected field when clicking on empty space
+    if (!isPlacingField) {
+      setSelectedField(null)
+      return
+    }
+
+    if (!selectedSigner || !pdfContainerRef.current) return
 
     const rect = event.currentTarget.getBoundingClientRect()
     const x = ((event.clientX - rect.left) / rect.width) * 100
@@ -236,38 +243,112 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
           </div>
         </div>
 
-        {/* Field List */}
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
-            Fields on Page {currentPage}
-          </h3>
-          <div className="space-y-2">
-            {currentPageFields.map((field: SignatureField) => (
-              <div
-                key={field.id}
-                className="p-3 bg-gray-50 rounded-lg border"
+        {/* Field Properties or Field List */}
+        {selectedField ? (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-700">Field Properties</h3>
+              <button
+                onClick={() => setSelectedField(null)}
+                className="text-gray-400 hover:text-gray-600 text-sm"
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-medium text-sm">
-                      {field.fieldType.charAt(0).toUpperCase() + field.fieldType.slice(1)}
-                    </div>
-                    <div className="text-xs text-gray-500">{field.signerName}</div>
-                  </div>
-                  <button
-                    onClick={() => field.id && deleteFieldMutation.mutate(field.id)}
-                    className="text-red-500 hover:text-red-700 text-sm"
-                  >
-                    ✕
-                  </button>
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="font-medium text-sm text-blue-900">
+                  {selectedField.fieldType.charAt(0).toUpperCase() + selectedField.fieldType.slice(1)} Field
+                </div>
+                <div className="text-xs text-blue-700 mt-1">
+                  Assigned to: {selectedField.signerName || 'Unassigned'}
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  Page {selectedField.pageNumber} • Required: {selectedField.isRequired ? 'Yes' : 'No'}
                 </div>
               </div>
-            ))}
-            {currentPageFields.length === 0 && (
-              <p className="text-sm text-gray-500 italic">No fields on this page</p>
-            )}
+              
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Field Label
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedField.label}
+                    onChange={(e) => {
+                      // TODO: Add field update mutation
+                      console.log('Update field label:', e.target.value)
+                    }}
+                    className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Enter field label"
+                  />
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="required"
+                    checked={selectedField.isRequired}
+                    onChange={(e) => {
+                      // TODO: Add field update mutation
+                      console.log('Update field required:', e.target.checked)
+                    }}
+                    className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="required" className="ml-2 text-xs text-gray-700">
+                    Required field
+                  </label>
+                </div>
+              </div>
+              
+              <div className="pt-3 border-t">
+                <button
+                  onClick={() => {
+                    if (selectedField.id) {
+                      deleteFieldMutation.mutate(selectedField.id)
+                      setSelectedField(null)
+                    }
+                  }}
+                  disabled={deleteFieldMutation.isLoading}
+                  className="w-full px-3 py-2 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded hover:bg-red-100 disabled:opacity-50"
+                >
+                  {deleteFieldMutation.isLoading ? 'Deleting...' : 'Delete Field'}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div>
+            <h3 className="text-sm font-medium text-gray-700 mb-3">
+              Fields on Page {currentPage}
+            </h3>
+            <div className="space-y-2">
+              {currentPageFields.map((field: SignatureField) => (
+                <div
+                  key={field.id}
+                  className="p-3 bg-gray-50 rounded-lg border cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => setSelectedField(field)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="font-medium text-sm">
+                        {field.fieldType.charAt(0).toUpperCase() + field.fieldType.slice(1)}
+                      </div>
+                      <div className="text-xs text-gray-500">{field.signerName}</div>
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Click to edit
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {currentPageFields.length === 0 && (
+                <p className="text-sm text-gray-500 italic">No fields on this page</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Save Button */}
         <div className="mt-8 pt-6 border-t">
@@ -348,27 +429,59 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
                   </Document>
 
                   {/* Render signature fields */}
-                  {currentPageFields.map((field: SignatureField) => (
-                  <div
-                    key={field.id}
-                    className="absolute border-2 bg-opacity-10 flex items-center justify-center text-xs font-medium cursor-pointer hover:bg-opacity-20 transition-opacity"
-                    style={{
-                      left: `${field.positionX}%`,
-                      top: `${field.positionY}%`,
-                      width: `${field.width}%`,
-                      height: `${field.height}%`,
-                      borderColor: getSignerColor(field.signerEmail || ''),
-                      backgroundColor: getSignerColor(field.signerEmail || ''),
-                      color: getSignerColor(field.signerEmail || '')
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      // Could add field editing here
-                    }}
-                  >
-                    {field.fieldType.toUpperCase()}
-                  </div>
-                  ))}
+                  {currentPageFields.map((field: SignatureField) => {
+                    const isSelected = selectedField?.id === field.id
+                    const signerColor = getSignerColor(field.signerEmail || '')
+                    
+                    return (
+                      <div
+                        key={field.id}
+                        className={`absolute border-2 flex items-center justify-center text-xs font-medium cursor-pointer transition-all ${
+                          isSelected 
+                            ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                            : 'border-dashed hover:border-solid hover:shadow-md'
+                        }`}
+                        style={{
+                          left: `${field.positionX}%`,
+                          top: `${field.positionY}%`,
+                          width: `${field.width}%`,
+                          height: `${field.height}%`,
+                          borderColor: isSelected ? '#3B82F6' : signerColor,
+                          backgroundColor: isSelected ? '#EFF6FF' : 'rgba(255, 255, 255, 0.9)',
+                          color: isSelected ? '#1D4ED8' : signerColor
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedField(field)
+                        }}
+                      >
+                        <div className="text-center">
+                          <div className="font-semibold">
+                            {field.fieldType.charAt(0).toUpperCase() + field.fieldType.slice(1)}
+                          </div>
+                          <div className="text-xs opacity-75">
+                            {field.signerName || 'Unassigned'}
+                          </div>
+                        </div>
+                        
+                        {isSelected && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (field.id) {
+                                deleteFieldMutation.mutate(field.id)
+                                setSelectedField(null)
+                              }
+                            }}
+                            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600"
+                            title="Delete field"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
