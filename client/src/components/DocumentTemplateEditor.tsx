@@ -3,7 +3,8 @@ import { Document, Page, pdfjs } from 'react-pdf'
 import { useMutation, useQueryClient, useQuery } from 'react-query'
 import { api } from '../utils/api'
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+// Use local worker to avoid CSP issues
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
 
 interface SignatureField {
   id?: string

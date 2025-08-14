@@ -5,7 +5,8 @@ import { Document, Page, pdfjs } from 'react-pdf'
 import SignaturePad from '../components/SignaturePad'
 import { api } from '../utils/api'
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+// Use local worker to avoid CSP issues
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js'
 
 interface SignaturePosition {
   x: number
