@@ -49,7 +49,6 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedFieldType, setSelectedFieldType] = useState<string>('signature')
   const [selectedSigner, setSelectedSigner] = useState<Signer | null>(signers[0] || null)
-  const [draggedField, setDraggedField] = useState<SignatureField | null>(null)
   const [isPlacingField, setIsPlacingField] = useState(false)
   const queryClient = useQueryClient()
   const pdfContainerRef = useRef<HTMLDivElement>(null)
