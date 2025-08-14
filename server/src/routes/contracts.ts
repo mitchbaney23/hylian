@@ -37,9 +37,20 @@ router.post('/', authenticateToken, async (req: any, res) => {
       }
     });
 
+    // Send email invitations (optional - won't fail if email not configured)
     for (const signer of contract.signers) {
-      const signingLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/sign/${contract.id}?signer=${signer.id}`;
-      await sendSigningInvitation(signer.email, signer.name, contract.title, signingLink);
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? process.env.FRONTEND_URL || 'https://your-app.up.railway.app'
+        : 'http://localhost:5174';
+      const signingLink = `${baseUrl}/sign/${contract.id}?signer=${signer.id}`;
+      
+      try {
+        await sendSigningInvitation(signer.email, signer.name, contract.title, signingLink);
+        console.log(`✅ Email invitation sent to ${signer.email}`);
+      } catch (emailError: any) {
+        console.log(`⚠️ Email not sent to ${signer.email} (email service not configured):`, emailError.message);
+        // Continue without failing - email is optional for development/testing
+      }
     }
 
     res.status(201).json(contract);
