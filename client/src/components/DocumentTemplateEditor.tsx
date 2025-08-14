@@ -51,21 +51,42 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
   const [selectedSigner, setSelectedSigner] = useState<Signer | null>(signers[0] || null)
   const [isPlacingField, setIsPlacingField] = useState(false)
   const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(true)
+  const [pdfError, setPdfError] = useState<string | null>(null)
   const queryClient = useQueryClient()
   const pdfContainerRef = useRef<HTMLDivElement>(null)
 
   // Fetch PDF with authentication
   useEffect(() => {
     const fetchPdf = async () => {
+      if (!documentId) return
+      
+      setPdfLoading(true)
+      setPdfError(null)
+      
       try {
+        console.log('Fetching PDF for document:', documentId)
         const response = await api.get(`/documents/${documentId}/file`, {
           responseType: 'blob'
         })
+        console.log('PDF response:', response)
+        console.log('Response data type:', typeof response.data)
+        console.log('Response data size:', response.data.size)
+        
         const blob = new Blob([response.data], { type: 'application/pdf' })
+        console.log('Created blob:', blob)
+        console.log('Blob size:', blob.size)
+        console.log('Blob type:', blob.type)
+        
         const url = URL.createObjectURL(blob)
+        console.log('Created object URL:', url)
         setPdfUrl(url)
-      } catch (error) {
+        setPdfLoading(false)
+      } catch (error: any) {
         console.error('Error fetching PDF:', error)
+        console.error('Error details:', error.response || error.message)
+        setPdfError(error.response?.data?.error || error.message || 'Failed to load PDF')
+        setPdfLoading(false)
       }
     }
 
@@ -74,6 +95,7 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
     // Cleanup object URL when component unmounts
     return () => {
       if (pdfUrl) {
+        console.log('Cleaning up PDF URL:', pdfUrl)
         URL.revokeObjectURL(pdfUrl)
       }
     }
@@ -288,22 +310,43 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
           {/* Document */}
           <div className="p-4 h-full overflow-auto">
             <div className="flex justify-center">
-              <div 
-                ref={pdfContainerRef}
-                className="relative cursor-crosshair"
-                onClick={handlePageClick}
-              >
-                {pdfUrl && (
+              {pdfLoading && (
+                <div className="flex items-center justify-center h-96">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <span className="ml-3 text-gray-600">Loading PDF...</span>
+                </div>
+              )}
+              
+              {pdfError && (
+                <div className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <div className="text-red-500 text-lg mb-2">Failed to load PDF</div>
+                    <div className="text-gray-600 text-sm">{pdfError}</div>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {!pdfLoading && !pdfError && pdfUrl && (
+                <div 
+                  ref={pdfContainerRef}
+                  className="relative cursor-crosshair"
+                  onClick={handlePageClick}
+                >
                   <Document
                     file={pdfUrl}
                     onLoadSuccess={onDocumentLoadSuccess}
                   >
                     <Page pageNumber={currentPage} width={800} />
                   </Document>
-                )}
 
-                {/* Render signature fields */}
-                {currentPageFields.map((field: SignatureField) => (
+                  {/* Render signature fields */}
+                  {currentPageFields.map((field: SignatureField) => (
                   <div
                     key={field.id}
                     className="absolute border-2 bg-opacity-10 flex items-center justify-center text-xs font-medium cursor-pointer hover:bg-opacity-20 transition-opacity"
@@ -323,8 +366,9 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
                   >
                     {field.fieldType.toUpperCase()}
                   </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
