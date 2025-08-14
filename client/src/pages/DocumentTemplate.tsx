@@ -10,6 +10,7 @@ const DocumentTemplate = () => {
   const [signers, setSigners] = useState([
     { email: '', name: '', color: '#3B82F6' }
   ])
+  const [showEditor, setShowEditor] = useState(false)
 
   const { data: document, isLoading } = useQuery(
     ['document', documentId],
@@ -71,10 +72,8 @@ const DocumentTemplate = () => {
     )
   }
 
-  // If no signers are defined yet, show the signer setup
-  const hasValidSigners = signers.some(s => s.email && s.name)
-
-  if (!hasValidSigners) {
+  // Show editor only when explicitly requested
+  if (!showEditor) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-6">
         <div className="bg-white shadow rounded-lg p-6">
@@ -156,6 +155,7 @@ const DocumentTemplate = () => {
                     return
                   }
                   setSigners(validSigners)
+                  setShowEditor(true)
                 }}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
               >

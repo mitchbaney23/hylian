@@ -109,7 +109,9 @@ const DocumentUpload = () => {
                 </div>
                 <div className="ml-4 flex-1">
                   <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                  <p className="text-sm text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                  <p className="text-sm text-gray-500">
+                    {file.size ? (file.size / 1024 / 1024).toFixed(2) + ' MB' : 'Calculating size...'}
+                  </p>
                 </div>
                 <button
                   onClick={() => setFile(null)}
