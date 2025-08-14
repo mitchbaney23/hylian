@@ -68,20 +68,24 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
       try {
         console.log('Fetching PDF for document:', documentId)
         const response = await api.get(`/documents/${documentId}/file`, {
-          responseType: 'blob'
+          responseType: 'arraybuffer'
         })
         console.log('PDF response:', response)
         console.log('Response data type:', typeof response.data)
-        console.log('Response data size:', response.data.size)
+        console.log('Response data size:', response.data.byteLength)
         
-        const blob = new Blob([response.data], { type: 'application/pdf' })
-        console.log('Created blob:', blob)
-        console.log('Blob size:', blob.size)
-        console.log('Blob type:', blob.type)
+        // Convert ArrayBuffer to base64 data URL to avoid CSP blob issues
+        const arrayBuffer = response.data
+        const bytes = new Uint8Array(arrayBuffer)
+        let binary = ''
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i])
+        }
+        const base64 = btoa(binary)
+        const dataUrl = `data:application/pdf;base64,${base64}`
         
-        const url = URL.createObjectURL(blob)
-        console.log('Created object URL:', url)
-        setPdfUrl(url)
+        console.log('Created data URL length:', dataUrl.length)
+        setPdfUrl(dataUrl)
         setPdfLoading(false)
       } catch (error: any) {
         console.error('Error fetching PDF:', error)
@@ -93,12 +97,9 @@ const DocumentTemplateEditor: React.FC<DocumentTemplateEditorProps> = ({
 
     fetchPdf()
 
-    // Cleanup object URL when component unmounts
+    // No cleanup needed for data URLs (unlike blob URLs)
     return () => {
-      if (pdfUrl) {
-        console.log('Cleaning up PDF URL:', pdfUrl)
-        URL.revokeObjectURL(pdfUrl)
-      }
+      console.log('Component cleanup - no URL revocation needed for data URLs')
     }
   }, [documentId])
 

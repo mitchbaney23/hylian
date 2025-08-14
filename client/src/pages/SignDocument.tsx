@@ -55,11 +55,20 @@ const SignDocument = () => {
 
       try {
         const response = await api.get(`/documents/${contract.document.id}/file`, {
-          responseType: 'blob'
+          responseType: 'arraybuffer'
         })
-        const blob = new Blob([response.data], { type: 'application/pdf' })
-        const url = URL.createObjectURL(blob)
-        setPdfUrl(url)
+        
+        // Convert ArrayBuffer to base64 data URL to avoid CSP blob issues
+        const arrayBuffer = response.data
+        const bytes = new Uint8Array(arrayBuffer)
+        let binary = ''
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i])
+        }
+        const base64 = btoa(binary)
+        const dataUrl = `data:application/pdf;base64,${base64}`
+        
+        setPdfUrl(dataUrl)
       } catch (error) {
         console.error('Error fetching PDF:', error)
       }
@@ -67,11 +76,9 @@ const SignDocument = () => {
 
     fetchPdf()
 
-    // Cleanup object URL when component unmounts
+    // No cleanup needed for data URLs (unlike blob URLs)
     return () => {
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl)
-      }
+      // Data URLs don't need cleanup like blob URLs
     }
   }, [contract?.document.id])
 
