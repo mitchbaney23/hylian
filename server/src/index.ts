@@ -7,6 +7,7 @@ import authRoutes from './routes/auth';
 import documentRoutes from './routes/documents';
 import contractRoutes from './routes/contracts';
 import signatureRoutes from './routes/signatures';
+import signatureFieldRoutes from './routes/signatureFields';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -34,6 +35,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/signatures', signatureRoutes);
+app.use('/api/signature-fields', signatureFieldRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ 

@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import DocumentUpload from './pages/DocumentUpload'
+import DocumentTemplate from './pages/DocumentTemplate'
 import ContractCreate from './pages/ContractCreate'
 import ContractView from './pages/ContractView'
 import SignDocument from './pages/SignDocument'
@@ -26,6 +27,11 @@ function App() {
           <Route path="/upload" element={
             <ProtectedRoute>
               <DocumentUpload />
+            </ProtectedRoute>
+          } />
+          <Route path="/documents/:documentId/template" element={
+            <ProtectedRoute>
+              <DocumentTemplate />
             </ProtectedRoute>
           } />
           <Route path="/contracts/create/:documentId" element={

@@ -71,10 +71,10 @@ const Dashboard = () => {
                       </span>
                       {doc.contracts.length === 0 && (
                         <Link
-                          to={`/contracts/create/${doc.id}`}
+                          to={`/documents/${doc.id}/template`}
                           className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                          Create Contract
+                          Prepare for Signing
                         </Link>
                       )}
                     </div>

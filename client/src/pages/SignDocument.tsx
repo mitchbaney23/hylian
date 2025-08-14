@@ -40,6 +40,12 @@ const SignDocument = () => {
     { enabled: !!contractId }
   )
 
+  const { data: signatureFields } = useQuery(
+    ['signatureFields', contract?.document.id],
+    () => api.get(`/signature-fields/document/${contract?.document.id}`).then(res => res.data),
+    { enabled: !!contract?.document.id }
+  )
+
   const signMutation = useMutation(
     (signatureData: any) => api.post('/signatures', signatureData),
     {
@@ -92,8 +98,17 @@ const SignDocument = () => {
   const handleSubmitSignature = () => {
     if (!signaturePosition || !signatureData || !signerId) return
 
+    // Find the signature field this signature is filling
+    const correspondingField = signatureFields?.find((field: any) => 
+      field.positionX === signaturePosition.x &&
+      field.positionY === signaturePosition.y &&
+      field.pageNumber === signaturePosition.pageNumber &&
+      field.signerEmail === signer?.email
+    )
+
     signMutation.mutate({
       signerId,
+      fieldId: correspondingField?.id,
       signatureData,
       positionX: signaturePosition.x,
       positionY: signaturePosition.y,
@@ -152,6 +167,9 @@ const SignDocument = () => {
             <div className="flex items-center space-x-4">
               {isPlacingSignature && (
                 <p className="text-sm text-blue-600">Click on the document to place your signature</p>
+              )}
+              {signatureFields?.some((field: any) => field.signerEmail === signer?.email) && (
+                <p className="text-sm text-green-600">Click on the blue "SIGN HERE" fields to add your signature</p>
               )}
               <button
                 onClick={handlePlaceSignature}
@@ -212,24 +230,85 @@ const SignDocument = () => {
                   <div className="relative">
                     <Page pageNumber={currentPage} width={800} />
                     
-                    {signatures?.filter((sig: any) => sig.pageNumber === currentPage).map((sig: any) => (
-                      <div
-                        key={sig.id}
-                        className="absolute border-2 border-blue-500 bg-blue-100 opacity-75"
-                        style={{
-                          left: `${sig.positionX}%`,
-                          top: `${sig.positionY}%`,
-                          width: `${sig.width}%`,
-                          height: `${sig.height}%`,
-                        }}
-                      >
-                        <img
-                          src={sig.signatureData}
-                          alt="Signature"
-                          className="w-full h-full object-contain"
-                        />
-                      </div>
-                    ))}
+                    {/* Show signature fields for current signer */}
+                    {signatureFields?.filter((field: any) => 
+                      field.pageNumber === currentPage && 
+                      field.signerEmail === signer?.email
+                    ).map((field: any) => {
+                      const existingSignature = signatures?.find((sig: any) => sig.fieldId === field.id)
+                      const isAssignedField = field.signerEmail === signer?.email
+                      
+                      return (
+                        <div
+                          key={field.id}
+                          className={`absolute border-2 flex items-center justify-center text-xs font-medium cursor-pointer ${
+                            existingSignature 
+                              ? 'border-green-500 bg-green-100' 
+                              : isAssignedField 
+                                ? 'border-blue-500 bg-blue-100 hover:bg-blue-200' 
+                                : 'border-gray-300 bg-gray-100'
+                          }`}
+                          style={{
+                            left: `${field.positionX}%`,
+                            top: `${field.positionY}%`,
+                            width: `${field.width}%`,
+                            height: `${field.height}%`,
+                          }}
+                          onClick={() => {
+                            if (isAssignedField && !existingSignature && signatureData) {
+                              setSignaturePosition({
+                                x: field.positionX,
+                                y: field.positionY,
+                                width: field.width,
+                                height: field.height,
+                                pageNumber: field.pageNumber
+                              })
+                            }
+                          }}
+                        >
+                          {existingSignature ? (
+                            <img
+                              src={existingSignature.signatureData}
+                              alt="Signature"
+                              className="w-full h-full object-contain"
+                            />
+                          ) : isAssignedField ? (
+                            <span className="text-blue-600">
+                              {field.fieldType === 'signature' ? 'SIGN HERE' : field.fieldType.toUpperCase()}
+                            </span>
+                          ) : (
+                            <span className="text-gray-500">
+                              {field.signerName || 'Other Signer'}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+
+                    {/* Show completed signatures from other signers */}
+                    {signatures?.filter((sig: any) => sig.pageNumber === currentPage).map((sig: any) => {
+                      const hasField = signatureFields?.find((field: any) => field.id === sig.fieldId)
+                      if (hasField) return null // Already shown above
+                      
+                      return (
+                        <div
+                          key={sig.id}
+                          className="absolute border-2 border-blue-500 bg-blue-100 opacity-75"
+                          style={{
+                            left: `${sig.positionX}%`,
+                            top: `${sig.positionY}%`,
+                            width: `${sig.width}%`,
+                            height: `${sig.height}%`,
+                          }}
+                        >
+                          <img
+                            src={sig.signatureData}
+                            alt="Signature"
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                      )
+                    })}
                     
                     {signaturePosition && signaturePosition.pageNumber === currentPage && (
                       <div

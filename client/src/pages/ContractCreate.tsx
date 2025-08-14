@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { useQuery } from 'react-query'
 import { api } from '../utils/api'
@@ -15,13 +15,17 @@ interface ContractForm {
 
 const ContractCreate = () => {
   const { documentId } = useParams()
+  const location = useLocation()
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
+  // Get predefined signers from template editor
+  const predefinedSigners = location.state?.predefinedSigners || [{ name: '', email: '' }]
+
   const { register, control, handleSubmit, formState: { errors } } = useForm<ContractForm>({
     defaultValues: {
-      signers: [{ name: '', email: '' }]
+      signers: predefinedSigners
     }
   })
 
@@ -71,6 +75,11 @@ const ContractCreate = () => {
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <h3 className="text-sm font-medium text-gray-900">Document</h3>
             <p className="text-sm text-gray-600">{document.originalName}</p>
+            {predefinedSigners.length > 1 && (
+              <p className="text-xs text-blue-600 mt-1">
+                ✓ Template configured with signature fields
+              </p>
+            )}
           </div>
         )}
 

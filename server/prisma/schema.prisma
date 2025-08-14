@@ -34,8 +34,9 @@ model Document {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  createdBy User       @relation(fields: [createdById], references: [id])
-  contracts Contract[]
+  createdBy        User             @relation(fields: [createdById], references: [id])
+  contracts        Contract[]
+  signatureFields  SignatureField[]
 
   @@map("documents")
 }
@@ -74,10 +75,31 @@ model ContractSigner {
   @@map("contract_signers")
 }
 
+model SignatureField {
+  id          String   @id @default(uuid())
+  documentId  String
+  fieldType   String   // "signature", "date", "text", "initials"
+  signerEmail String?  // Which signer this field is assigned to
+  signerName  String?
+  label       String   @default("")
+  isRequired  Boolean  @default(true)
+  positionX   Float
+  positionY   Float
+  width       Float
+  height      Float
+  pageNumber  Int
+  createdAt   DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+
+  @@map("signature_fields")
+}
+
 model Signature {
   id        String   @id @default(uuid())
   signerId  String
   userId    String?
+  fieldId   String?  // Reference to the signature field this signature fills
   signatureData String
   signatureType String @default("electronic")
   positionX Float
