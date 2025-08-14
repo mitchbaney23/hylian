@@ -13,7 +13,7 @@
     "start": "cd server && npm start",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",
     "railway:build": "npm run install:all && npm run build",
-    "railway:start": "cd server && npm run migrate && npm start"
+    "railway:start": "cd server && npm run migrate:deploy && npm start"
   },
   "keywords": ["digital-signature", "contract-management", "docusign", "pdf"],
   "author": "",

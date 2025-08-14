@@ -1,0 +1,28 @@
+node_modules
+*/node_modules
+.git
+.gitignore
+README.md
+SETUP.md
+RAILWAY_SETUP.md
+.env
+.env.local
+.env.development
+.env.production
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist
+build
+client/dist
+
+# Development files
+.vscode
+.DS_Store
+*.log
+
+# Uploads (will be created at runtime)
+uploads
+server/uploads

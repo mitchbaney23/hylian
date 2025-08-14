@@ -1,11 +1,17 @@
+[phases.install]
+cmds = ["npm ci"]
+
 [phases.build]
 cmds = [
-  "npm run install:all",
-  "npm run build"
+  "cd server && npm ci",
+  "cd client && npm ci", 
+  "cd server && npm run generate",
+  "cd server && npm run build",
+  "cd client && npm run build"
 ]
 
 [phases.start]
-cmd = "npm start"
+cmd = "cd server && npm run migrate:deploy && npm start"
 
 [variables]
 NODE_ENV = "production"
