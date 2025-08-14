@@ -34,7 +34,7 @@ const DocumentUpload = () => {
       const formData = new FormData()
       formData.append('document', file)
 
-      const response = await api.post('/documents/upload', formData, {
+      await api.post('/documents/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

@@ -1,4 +1,4 @@
-import React from 'react'
+// Remove unused import
 import { Link } from 'react-router-dom'
 import { useQuery } from 'react-query'
 import { api } from '../utils/api'
